@@ -5,6 +5,7 @@ from .rectangularplate import BoundaryCondition, ChladniPattern, PlateMode, Rect
 from .solver import (
     KirchhoffLoveSolver,
     ModalSolution,
+    compute_composite_pattern,
     compute_pattern,
     forced_response,
     marching_squares,
@@ -19,6 +20,7 @@ __all__ = [
     "ModalSolution",
     "PlateMode",
     "RectangularPlate",
+    "compute_composite_pattern",
     "compute_pattern",
     "forced_response",
     "frequency_range",

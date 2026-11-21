@@ -23,6 +23,7 @@ compute_pattern / pattern_for_mode
 
 from __future__ import annotations
 
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 
 import numpy as np
@@ -35,6 +36,7 @@ __all__ = [
     "marching_squares",
     "forced_response",
     "compute_pattern",
+    "compute_composite_pattern",
     "pattern_for_mode",
 ]
 
@@ -316,6 +318,50 @@ def compute_pattern(
     )
     lines = tuple(marching_squares(values, x, y))
     return ChladniPattern(plate, float(frequency_hz), x, y, values, lines, dominant)
+
+
+def compute_composite_pattern(
+    plate: RectangularPlate,
+    components: Sequence[tuple[float, float]],
+    *,
+    resolution: int = 200,
+    max_order: int = 10,
+    damping_ratio: float = 0.02,
+    drive_point: tuple[float, float] | None = None,
+) -> ChladniPattern:
+    """Composite pattern for several frequencies ``[(frequency_hz, weight), ...]``.
+
+    Each frequency gives its own (normalised) forced response; the final field is
+    their weighted sum (e.g. weights = spectral energy of each peak) and nodal
+    lines are extracted from it. This is a visual synthesis of a multi-frequency
+    "signature", not a single physical steady state (different frequencies do not
+    vibrate in phase). ``frequency_hz`` and ``dominant_mode`` refer to the
+    component with the largest weight.
+    """
+    comps = [(float(f), float(w)) for f, w in components if w > 0]
+    if not comps:
+        raise ValueError("components needs at least one frequency with weight > 0")
+    x, y = plate.grid(resolution)
+    total = np.zeros((len(y), len(x)))
+    main_freq, main_weight, main_mode = comps[0][0], -1.0, None
+    for frequency, weight in comps:
+        values, dominant = forced_response(
+            plate,
+            frequency,
+            x,
+            y,
+            max_order=max_order,
+            damping_ratio=damping_ratio,
+            drive_point=drive_point,
+        )
+        total += weight * values
+        if weight > main_weight:
+            main_freq, main_weight, main_mode = frequency, weight, dominant
+    peak = float(np.max(np.abs(total)))
+    if peak > 0:
+        total = total / peak
+    lines = tuple(marching_squares(total, x, y))
+    return ChladniPattern(plate, main_freq, x, y, total, lines, main_mode)
 
 
 def pattern_for_mode(plate: RectangularPlate, mode: PlateMode, *, resolution: int = 200) -> ChladniPattern:

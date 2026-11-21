@@ -27,7 +27,16 @@ Placa (dimensões, material, contorno)
    segmentos em polilinhas contínuas, sem traços soltos.
 3. **Geometria** (`src/cymaarchitecture/geometry/`): primitivas imutáveis (`Point2D`,
    `Polyline2D`, `GeometryLayer`, `GeometryDocument`) e simplificação Ramer-Douglas-Peucker.
-4. **Exportação** (código próprio, sem bibliotecas externas)
+4. **Áudio** (`src/audio_module/`, isolado do motor físico)
+   - Lê `.wav` (biblioteca padrão) e `.mp3`/`.ogg` (via `soundfile`).
+   - FFT com janela de Hann (`scipy.fft`, ou `numpy.fft` se o scipy não estiver instalado).
+   - **Fundamental** por soma harmónica ponderada, que evita erros de oitava. Também deteta
+     **picos** com nome da nota (ex.: `A4 +3¢`) e calcula a **assinatura média** da faixa
+     pelo método de Welch.
+   - As frequências obtidas são injetadas no solver como resposta forçada. Com vários picos,
+     gera um **padrão composto**: a soma das respostas, ponderada pela energia espectral de
+     cada pico.
+5. **Exportação** (código próprio, sem bibliotecas externas)
    - **SVG** em escala real (mm, cm ou polegadas), uma camada `<g>` por layer.
    - **DXF AutoCAD 2000 (AC1015)** com camadas `PLATE_OUTLINE` e `NODAL_LINES` (`LWPOLYLINE`).
 
@@ -37,7 +46,9 @@ Placa (dimensões, material, contorno)
 |---|---|
 | Solver numérico vs. solução analítica (placa apoiada 300×200×1 mm, 6 primeiros modos) | erro máximo **0,32 %** |
 | Geração em lote (`main.py`): 10 padrões, 20 ficheiros SVG + DXF | **~3 s** num portátil comum |
-| Testes automáticos (`pytest`) | **57 testes** a passar |
+| Deteção de picos de áudio (tom puro de 440 Hz, trecho de 0,5 s) | erro **< 0,5 Hz** |
+| Fundamental de um tom de 110 Hz com o 2.º harmónico mais forte | **110 Hz** detetado, sem erro de oitava |
+| Testes automáticos (`pytest`) | **77 testes** a passar |
 
 **Limitações a ter em conta**
 
@@ -85,6 +96,21 @@ python criarprojeto.py --check     # verifica a estrutura de pastas
 
 ## Usar a interface
 
+Na barra lateral escolha o **modo de análise**. No telemóvel, a barra lateral abre-se no
+botão **›** do canto superior esquerdo.
+
+| Modo | O que faz |
+|---|---|
+| 🎛️ **Manual (Chladni)** | Escolhe um modo ressonante ou uma frequência em Hz. |
+| 🎵 **Áudio / acorde específico** | Carrega um áudio, que pode ouvir na página. Seleciona um trecho, deteta a fundamental (ou o pico dominante) e injeta essa frequência na placa. |
+| 📊 **Assinatura média da obra** | Analisa a faixa inteira, encontra os N picos de maior energia e gera um padrão composto. |
+
+Nos modos de áudio, o **espectro de frequências** (Hz × amplitude) aparece antes da exportação,
+com os picos e as notas assinalados. Pode **transpor por oitavas** para aproximar as frequências
+musicais das ressonâncias da placa.
+
+Passos comuns a todos os modos:
+
 1. **Placa**: largura, altura e espessura (mm), material (latão, alumínio, aço, madeira) e
    condição de contorno.
 2. **Excitação**: escolha um **modo ressonante** da lista (com a frequência correspondente) ou
@@ -98,7 +124,8 @@ python criarprojeto.py --check     # verifica a estrutura de pastas
 ## Publicar online
 
 O projeto já está pronto a publicar: `app.py` adiciona `src/` ao caminho de importação e
-`requirements.txt` lista as dependências (`numpy` e `streamlit`).
+`requirements.txt` lista as dependências (`numpy`, `streamlit`, `scipy` e `soundfile`).
+O `soundfile` já traz a libsndfile com suporte de MP3/OGG, por isso não é preciso instalar ffmpeg.
 
 ### Streamlit Community Cloud (gratuito)
 
@@ -133,6 +160,7 @@ CymaArchitecture/
 ├── tests/                  # Testes pytest
 └── src/
     ├── prospeccao_mercado.py
+    ├── audio_module/       # loader (wav/mp3/ogg) e analysis (FFT, picos, fundamental)
     └── cymaarchitecture/
         ├── cymatics/       # rectangularplate, solver, batch_generator
         └── geometry/       # primitives, adapters/, exporters/ (SVG, DXF)

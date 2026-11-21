@@ -1,2 +1,5 @@
 numpy>=1.24
 streamlit>=1.40
+# Análise de áudio (src/audio_module)
+scipy>=1.10        # scipy.fft (sem ele, o módulo usa numpy.fft automaticamente)
+soundfile>=0.12    # leitura de .mp3 e .ogg (WAV PCM funciona sem ele)

@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+.venv/
+venv/
+
+# Ficheiros gerados pela aplicação
+saida/
+
+# Ficheiros pessoais: códigos de recuperação, credenciais e backups
+*codigo*seguran*
+*Codigo*seguran*
+*recovery*code*
+*recovery-codes*
+*backup*code*
+*.docx
+*.xlsx
+*.pdf
+.env
+.env.*
+secrets.toml
+.streamlit/secrets.toml
+*.bak
+*.backup
+*.old
+*~
+backup/
+backups/
+
+# Notas locais
+CymaArchitecture_nuvem.txt
+
+# Sistema
+Thumbs.db
+desktop.ini
+.DS_Store
